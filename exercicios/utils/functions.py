@@ -3,6 +3,19 @@
 
 # In[ ]:
 
+import numpy as np
+
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
+
+import rasterio
+from rasterio import Affine
+from rasterio.crs import CRS
+#import rasterio.transform
+from rasterio.windows import from_bounds
+from rasterio.warp import Resampling, reproject, transform
+from IPython.display import display, HTML
 
 def show_collections(catalogo):
     for colecao in catalogo.get_collections():
@@ -113,27 +126,106 @@ def read(uri: str, bbox: list, masked: bool = True, crs: str = None):
 # In[ ]:
 
 
-def save_rgb_in_geotiff_format(*args):
-    for i, image in enumerate(args):
+def save_rgb_in_geotiff_format(crs, transform, *args):
+    for img_index, image in enumerate(args):
         height, width, num_bands = image.shape
 
-        file_name = f'./output/rgb_image{i}.tif'
+        file_name = f'./output/rgb_image{img_index}.tif'
         
         with rasterio.open(
-            file_name,   # nome do arquivo de saída
+            file_name,
             'w',
             driver='GTiff',
             height=height,
             width=width,
-            count=num_bands,            # 3 bandas RGB
-            dtype=rgb_pre.dtype,
-            crs=ds.crs,                    # sistema de referência (ex.: "EPSG:4326")
-            transform=box_trasform_20m         # transform (georreferenciamento)
+            count=num_bands,
+            dtype=image.dtype,
+            crs=crs,
+            transform=transform
         ) as dst:
-            for i in range(num_bands):
-                dst.write(rgb_pre[:, :, i], i + 1)
+            
+            for band_index in range(num_bands):
+                dst.write(image[:, :, band_index], band_index + 1)
         
-        print(f'RGB Pré-Fogo salvo como {file_name}.')
+        print(f'Imagem salva como {file_name}.')
+    
+
+# In[ ]:
+
+def plot_pre_pos(rgb_pre, rgb_pos, 
+                 title1="Pré-Fogo", 
+                 title2="Pós-Fogo",
+                 figsize=(10, 5)
+                ):
+    
+    fig, axes = plt.subplots(1, 2, figsize=figsize)
+
+    axes[0].set_title(title1)
+    axes[0].axis('off')
+    axes[0].imshow((rgb_pre * 255).astype(np.uint8), interpolation='nearest')
+
+    axes[1].set_title(title2)
+    axes[1].axis('off')
+    axes[1].imshow((rgb_pos * 255).astype(np.uint8), interpolation='nearest')
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_nbr(nbr_pre, nbr_pos, 
+                 title1="Pré-Fogo", 
+                 title2="Pós-Fogo",
+                 figsize=(10, 5)
+            ):
+    # Configura a figura com dois subplots (1 linha, 2 colunas)
+    fig, axes = plt.subplots(1, 2, figsize=(14, 7))
+    
+    # Plota imagem NBR pré-fogo
+    nbr_pre_plot = axes[0].imshow(nbr_pre, cmap="RdYlGn", vmin=-0.35, vmax=0.35, interpolation='nearest')
+    axes[0].set_title(title1)
+    axes[0].axis("off")
+    cbar_pre = plt.colorbar(nbr_pre_plot, ax=axes[0], fraction=0.03, pad=0.04)
+    cbar_pre.set_label("NBR Value")
+    
+    # Plota imagem NBR pós-fogo
+    nbr_pos_plot = axes[1].imshow(nbr_pos, cmap="RdYlGn", vmin=-0.35, vmax=0.35, interpolation='nearest')
+    axes[1].set_title(title2)
+    axes[1].axis("off")
+    cbar_pos = plt.colorbar(nbr_pos_plot, ax=axes[1], fraction=0.03, pad=0.04)
+    cbar_pos.set_label("NBR Value")
+    
+    # Ajusta o layout para evitar sobreposição
+    plt.tight_layout()
+    plt.show()
+    
+    return
+
+def plot_nbrswir(nbrswir_pre, nbrswir_pos, 
+                 title1="Pré-Fogo", 
+                 title2="Pós-Fogo",
+                 figsize=(10, 5)):
+
+    # Configura a figura com dois subplots (1 linha, 2 colunas)
+    fig, axes = plt.subplots(1, 2, figsize=(14, 7))
+    
+    # Plota imagem NBR pré-fogo
+    nbrswir_pre_plot = axes[0].imshow(nbrswir_pre, cmap="RdYlGn", vmin=-0.15, vmax=0.15, interpolation='nearest')
+    axes[0].set_title(title1)    
+    axes[0].axis("off")
+    cbar_pre = plt.colorbar(nbrswir_pre_plot, ax=axes[0], fraction=0.03, pad=0.04)
+    cbar_pre.set_label("NBRSWIR Value")
+    
+    # Plota imagem NBR pós-fogo
+    nbrswir_pos_plot = axes[1].imshow(nbrswir_pos, cmap="RdYlGn", vmin=-0.15, vmax=0.15, interpolation='nearest')
+    axes[1].set_title(title2)
+    axes[1].axis("off")
+    cbar_pos = plt.colorbar(nbrswir_pos_plot, ax=axes[1], fraction=0.03, pad=0.04)
+    cbar_pos.set_label("NBRSWIR Value")
+    
+    # Ajusta o layout para evitar sobreposição
+    plt.tight_layout()
+    plt.show()
+    
+    return
 
 
 # In[ ]:
