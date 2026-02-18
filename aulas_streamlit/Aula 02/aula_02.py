@@ -38,9 +38,9 @@ with colunas[1]:
     )
 
     st.image(
-        image='image.jpeg',
-        caption='tatuagem',
-        use_container_width=True # usar todo o espaço do contianer (neste caso, a coluna)
+        image='image.png',
+        caption='pinguins',
+        use_container_width=True # usar todo o espaço do container (neste caso, a coluna)
     )
     st.warning('Atenção! Este é um aviso.')
     
