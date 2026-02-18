@@ -10,7 +10,7 @@ st.subheader('Sou o João!')
 
 # Usar o st.markdown() para as informações do perfil
 st.markdown('''
-Tecnólogo em **Desenvolvimento de Software Multiplataforma** 🧑🏻‍💻 e Técnico em **Desenvolvimento de Sistemas**
+Tecnólogo em **Desenvolvimento de Software Multiplataforma** e Técnico em **Desenvolvimento de Sistemas** 🧑🏻‍💻
 Gosto muito de *Python* me *PHP*, utilizo eles para tudo!
 As áreas que gosto de estudar são:
 * Análise de dados;
