@@ -15,7 +15,6 @@ from datetime import datetime
 
 import rasterio
 
-
 st.set_page_config(
     layout='wide',
     page_icon='🗺️'
@@ -43,7 +42,7 @@ if uploaded_file is not None:
                 st.session_state['aoi'] = aoi
                 st.success("Área de interesse carregada com sucesso!")
                 with st.spinner(f'Gerando Mapa...'):
-                    show_map(aoi)
+                    show_map(aoi)    
 
 
 if 'aoi' in st.session_state:
@@ -121,6 +120,16 @@ if 'items' in st.session_state:
     with columns[2]:
         st.image(thumbnail_pos, caption=img_pos_label)
 
+
+    if 'show_map_flag' not in st.session_state:
+        st.session_state['show_map_flag'] = False
+
+    if st.button('Visualizar imagens no mapa'):
+        st.session_state['show_map_flag'] = True
+
+    if st.session_state['show_map_flag']:
+        show_selected_areas_on_map(st.session_state['aoi'], imagem_pre, imagem_pos)
+
     st.divider()
 
     st.header('Índices Espectrais')
@@ -179,20 +188,20 @@ if 'items' in st.session_state:
 
 
 
-            plots = [
-                ("Área Queimada", lambda: plot_pre_pos(rgb_pre, rgb_pos)),
-                ("NDVI", lambda: plot_ndvi(ndvi_pre, ndvi_pos)),
-                ("NBR", lambda: plot_nbr(nbr_pre, nbr_pos)),
-                ("NBRSWIR", lambda: plot_nbrswir(nbrswir_pre, nbrswir_pos)),
-            ]
+        plots = [
+            ("Área Queimada", lambda: plot_pre_pos(rgb_pre, rgb_pos)),
+            ("NDVI", lambda: plot_ndvi(ndvi_pre, ndvi_pos)),
+            ("NBR", lambda: plot_nbr(nbr_pre, nbr_pos)),
+            ("NBRSWIR", lambda: plot_nbrswir(nbrswir_pre, nbrswir_pos)),
+        ]
 
-            num_cols = 2
+        num_cols = 2
 
-            for i in range(0, len(plots), num_cols):
-                cols = st.columns(num_cols)
+        for i in range(0, len(plots), num_cols):
+            cols = st.columns(num_cols)
 
-                for col, (titulo, plot_func) in zip(cols, plots[i:i+num_cols]):
-                    with col:
-                        st.subheader(titulo)
-                        with st.spinner(f'Gerando {titulo}...'):
-                            plot_func()
+            for col, (titulo, plot_func) in zip(cols, plots[i:i+num_cols]):
+                with col:
+                    st.subheader(titulo)
+                    with st.spinner(f'Gerando {titulo}...'):
+                        plot_func()

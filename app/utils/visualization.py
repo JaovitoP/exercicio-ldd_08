@@ -3,10 +3,13 @@ import matplotlib.pyplot as plt
 import folium
 from streamlit_folium import st_folium
 import streamlit as st
+from folium.plugins import MousePosition, MeasureControl, Fullscreen, HeatMap
+from folium import Marker
 
+from datetime import datetime
 
 def show_map(aoi):
-    f = folium.Figure(height=400)
+    f = folium.Figure()
     centro = aoi.geometry.centroid.iloc[0]
     mapa = folium.Map(location=[centro.y, centro.x],
                zoom_start=10,
@@ -16,10 +19,67 @@ def show_map(aoi):
 
     folium.GeoJson(aoi).add_to(mapa)
 
-    st_folium(mapa, width="100%", height=400)
+    MousePosition().add_to(mapa)
+
+    mapa.add_child(MeasureControl())
+    Fullscreen().add_to(mapa)
+
+    st_folium(mapa, width="100%", height=600)
+
+def show_selected_areas_on_map(aoi, imagem_pre, imagem_pos):
+    f = folium.Figure()
+
+    centro = aoi.geometry.centroid.iloc[0]
+    center_lat, center_lon = centro.y, centro.x
+
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=10).add_to(f)
+
+    tif_img_pre = imagem_pre.assets['TCI'].href
+    tif_img_pos = imagem_pos.assets['TCI'].href
+
+    title_img_pre = datetime.fromisoformat(
+        imagem_pre.properties['datetime']
+    ).strftime("%d/%m/%y %H:%M")
+
+    title_img_pos = datetime.fromisoformat(
+        imagem_pos.properties['datetime']
+    ).strftime("%d/%m/%y %H:%M")
+
+    tms_url_1 = f"https://data.inpe.br/bdc/tms/tiles/WebMercatorQuad/{{z}}/{{x}}/{{y}}?url={tif_img_pre}"
+
+    folium.TileLayer(
+        tiles=tms_url_1,
+        attr="INPE Sentinel-2",
+        name=title_img_pre,
+        overlay=True,
+        control=True
+    ).add_to(m)
+
+    tms_url_2 = f"https://data.inpe.br/bdc/tms/tiles/WebMercatorQuad/{{z}}/{{x}}/{{y}}?url={tif_img_pos}"
+
+    folium.TileLayer(
+        tiles=tms_url_2,
+        attr="INPE Sentinel-2",
+        name=title_img_pos,
+        overlay=True,
+        control=True
+    ).add_to(m)
+
+    folium.GeoJson(
+        aoi,
+        name="AOI",
+        style_function=lambda x: {
+            'color': 'red',
+            'weight': 2,
+            'fill': False
+        }
+    ).add_to(m)
+
+    folium.LayerControl().add_to(m)
+
+    st_folium(m, width="100%", height=600)       
 
 def plot_pre_pos(rgb_pre, rgb_pos):
-    
 
     fig, axes = plt.subplots(
         1, 2,
