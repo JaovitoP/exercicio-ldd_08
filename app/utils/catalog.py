@@ -1,4 +1,8 @@
 import pystac_client
+from shapely.geometry import shape
+import geopandas as gpd
+import streamlit as st
+from shapely import wkt
 
 def get_catalog():
     service='https://data.inpe.br/bdc/stac/v1/'
@@ -22,29 +26,51 @@ def search_items(aoi, init_date, end_date):
         datetime=date_range
     )
     items = list(item_search.item_collection())
-    items = sorted(items, key=lambda x: x.datetime)
-    print(items)
-    return items
+    items_within_aoi = get_items_with_aoi_within(aoi, items)
+    items_within_aoi = sorted(items_within_aoi, key=lambda x: x.datetime)
+    return items_within_aoi
     
 
 def show_details(items):
     details = []
     for i, item in enumerate(items):
-        item_id = item.id  # ID do item
-        date = item.properties.get('datetime', 'N/A')  # Data da aquisição
+        item_id = item.id
+        date = item.properties.get('datetime', 'N/A')
         
-        # Cobertura de nuvens
         cloud_cover = item.properties.get('eo:cloud_cover', 'N/A')
         if isinstance(cloud_cover, (float, int)):
             cloud_cover_str = f"{cloud_cover:.1f}%"
         else:
             cloud_cover_str = str(cloud_cover)
         
-        # Tile_ID do próprio item
         tile_id = item.properties.get('tileId', 'N/A')
         
-        # Adiciona à lista
         details.append(
             f"Imagem [{i}]: Data: {date}, Cobertura de nuvens: {cloud_cover_str}, Tile_ID: {tile_id}"
         )
     return details
+
+
+def get_items_with_aoi_within(aoi, items):
+    aoi_geom = aoi.geometry.values[0]
+    items_within_aoi = []
+    
+    for idx, item in enumerate(items):
+        footprint_wkt = item.properties['Footprint']
+        
+        if "geography" in footprint_wkt:
+            footprint_wkt = footprint_wkt.replace("geography'SRID=4326;", "")
+        
+        footprint_wkt = footprint_wkt.strip("'")
+        
+        try:
+            footprint_geom = wkt.loads(footprint_wkt)
+        except Exception as e:
+            st.write(f"Erro ao carregar geometria WKT do item {idx + 1}: {e}")
+            continue 
+        
+        
+        if aoi_geom.within(footprint_geom):
+            items_within_aoi.append(item)
+    
+    return items_within_aoi

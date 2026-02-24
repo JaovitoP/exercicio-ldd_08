@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 import folium
 from streamlit_folium import st_folium
 import streamlit as st
-from folium.plugins import MousePosition, MeasureControl, Fullscreen, HeatMap
-from folium import Marker
+from folium.plugins import MousePosition, Fullscreen
 
 from datetime import datetime
 
@@ -21,7 +20,6 @@ def show_map(aoi):
 
     MousePosition().add_to(mapa)
 
-    mapa.add_child(MeasureControl())
     Fullscreen().add_to(mapa)
 
     st_folium(mapa, width="100%", height=600)

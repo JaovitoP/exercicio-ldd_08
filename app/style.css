@@ -1,0 +1,14 @@
+.gradient-divider {
+    height: 2px;
+    background: linear-gradient(to right, #FF5733, #FF8C00);
+    border: none;
+    margin: 20px 0;
+}
+.blue-section {
+    background-color: #1e3a8a; 
+    color: white;
+    display: flex;
+    justify-content:space-between;
+    padding: 5px;
+    margin-bottom:10px;
+}

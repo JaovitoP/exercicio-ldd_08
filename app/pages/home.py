@@ -4,11 +4,9 @@ from utils.aoi import *
 from utils.catalog import *
 from utils.indices import *
 from utils.raster import read, transforme_20m
-#from utils.statistics import *
 from utils.visualization import *
 import tempfile
 import os
-
 import zipfile
 
 from datetime import datetime
@@ -19,6 +17,47 @@ st.set_page_config(
     layout='wide',
     page_icon='🗺️'
 )
+
+with open('style.css') as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+st.markdown("""
+    <div class="blue-section">
+        <img src="../assets/logotipo_govbr.png">
+        <p>COMUNICA BR | ACESSO À INFORMAÇÃO | PARTICIPE | LEGISLAÇÃO | ÓRGÃOS</p>
+    </div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div style="display: flex; align-items: center; justify-content: space-between;">
+    <img src="../assets/logotipo_conjugado.svg">
+    <div style="display: flex; gap: 20px;">
+        <select onchange="location = this.value;">
+            <option value="#">COMUNICA BR</option>
+        </select>
+        <select onchange="location = this.value;">
+            <option value="#">ACESSO À INFORMAÇÃO</option>
+        </select>
+        <select onchange="location = this.value;">
+            <option value="#">PARTICIPE</option>
+        </select>
+        <select onchange="location = this.value;">
+            <option value="#">LEGISLAÇÃO</option>
+        </select>
+        <select onchange="location = this.value;">
+            <option value="#">ÓRGÃOS</option>
+        </select>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.image(
+    image="assets/logotipo_conjugado.svg",
+    width=180
+)
+
+st.markdown('<div class="gradient-divider"></div>', unsafe_allow_html=True)
+
 
 st.header('Área de interesse')
 st.subheader('1. Faça upload da área de interesse')
@@ -75,7 +114,9 @@ if 'aoi' in st.session_state:
                 init_date,
                 end_date
             )
-
+        items = get_items_with_aoi_within(st.session_state['aoi'], list(st.session_state['items']))
+        st.session_state['items'] = items
+            
 if 'items' in st.session_state:
 
     items = st.session_state['items']
@@ -88,12 +129,11 @@ if 'items' in st.session_state:
         with col:
             st.image(item.assets['PVI'].href, use_container_width=True, caption=f'Imagem {index}: {datetime.fromisoformat(item.properties.get('datetime').replace('Z', '+00:00')).strftime('%d/%m/%Y')} | Cobertura (%): {item.properties.get('eo:cloud_cover', 'N/A')}%')
 
-
     details = show_details(items)
     options = [
         {
             "label": f"Imagem [{i}]: Data: {datetime.fromisoformat(item.properties.get('datetime').replace('Z', '+00:00')).strftime('%d/%m/%Y')}, "
-                    f"Cobertura de nuvens: {item.properties.get('eo:cloud_cover', 'N/A')}%, ",
+                    f"Cobertura de nuvens: {item.properties.get('eo:cloud_cover', 'N/A')}%",
             "item": item
         }
         for i, item in enumerate(items)
