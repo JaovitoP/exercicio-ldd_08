@@ -1,5 +1,4 @@
 import pystac_client
-from shapely.geometry import shape
 import geopandas as gpd
 import streamlit as st
 from shapely import wkt
@@ -11,14 +10,11 @@ def get_catalog():
 
 def show_collections():
     catalog = get_catalog()
-    for colecao in catalog.get_collections():
-        print(f"{colecao.title}: {colecao.id}", end="\n"*2)
+    for collection in catalog.get_collections():
+        print(f"{collection.title}: {collection.id}", end="\n"*2)
 
 def search_items(aoi, init_date, end_date):
-    print(aoi, init_date, end_date)
-    
     catalog = get_catalog()
-    
     collection = 'S2_L2A-1'
     date_range = f'{init_date}/{end_date}'
     item_search = catalog.search(bbox=aoi.total_bounds,
@@ -34,7 +30,6 @@ def search_items(aoi, init_date, end_date):
 def show_details(items):
     details = []
     for i, item in enumerate(items):
-        item_id = item.id
         date = item.properties.get('datetime', 'N/A')
         
         cloud_cover = item.properties.get('eo:cloud_cover', 'N/A')

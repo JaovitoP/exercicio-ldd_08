@@ -1,5 +1,14 @@
+.block-container {
+    padding-top: 0rem;
+    padding-bottom: 1rem;
+    padding-right: 1rem;
+    padding-left: 1rem;
+}
+
+header {visibility: hidden;}
+
 .gradient-divider {
-    height: 2px;
+    height: 4px;
     background: linear-gradient(to right, #FF5733, #FF8C00);
     border: none;
     margin: 20px 0;
@@ -8,7 +17,8 @@
     background-color: #1e3a8a; 
     color: white;
     display: flex;
+    flex-direction: row;
     justify-content:space-between;
-    padding: 5px;
     margin-bottom:10px;
+    height: 25px;
 }
