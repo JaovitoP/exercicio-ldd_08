@@ -1,12 +1,12 @@
 .block-container {
-    padding-top: 0rem;
+    padding-top: 1rem;
     padding-bottom: 1rem;
     padding-right: 1rem;
     padding-left: 1rem;
 }
-
+/*
 header {visibility: hidden;}
-
+*/
 .gradient-divider {
     height: 4px;
     background: linear-gradient(to right, #FF5733, #FF8C00);

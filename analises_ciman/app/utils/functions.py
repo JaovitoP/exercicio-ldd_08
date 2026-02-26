@@ -7,9 +7,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.patches as mpatches
 
+url_base = 'https://data.inpe.br/queimadas/portal/csv/download/historico-mensal/'
+
 def preparar_focos(link):
   # Faz a leitura do arquivo CSV direto da URL
-  df_focos = pd.read_csv(link)
+  df_focos = pd.read_csv(url_base+link)
 
   # Eliminar as 3 ultimas linhas
   df_focos = df_focos.iloc[:-3, :-1].copy()
