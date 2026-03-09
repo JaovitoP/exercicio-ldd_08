@@ -7,48 +7,28 @@ import streamlit as st
 import matplotlib.image as mpimg
 from datetime import date
 
-estados_formatados = {
-    'acre': 'Acre',
-    'alagoas': 'Alagoas',
-    'amapa': 'Amapá',
-    'amazonas': 'Amazonas',
-    'bahia': 'Bahia',
-    'ceara': 'Ceará',
-    'distrito_federal': 'Distrito Federal',
-    'espirito_santo': 'Espírito Santo',
-    'goias': 'Goiás',
-    'maranhao': 'Maranhão',
-    'mato_grosso': 'Mato Grosso',
-    'mato_grosso_do_sul': 'Mato Grosso do Sul',
-    'minas_gerais': 'Minas Gerais',
-    'para': 'Pará',
-    'paraiba': 'Paraíba',
-    'parana': 'Paraná',
-    'pernambuco': 'Pernambuco',
-    'piaui': 'Piauí',
-    'rio_de_janeiro': 'Rio de Janeiro',
-    'rio_grande_do_norte': 'Rio Grande do Norte',
-    'rio_grande_do_sul': 'Rio Grande do Sul',
-    'rondonia': 'Rondônia',
-    'roraima': 'Roraima',
-    'santa_catarina': 'Santa Catarina',
-    'sao_paulo': 'São Paulo',
-    'sergipe': 'Sergipe',
-    'tocantins': 'Tocantins'
+regioes_formatadas = {
+    'amazonia_legal': 'Amazônia Legal',
+    'matopiba': 'MATOPIBA',
+    'map': 'MAP',
+    'centro_oeste': 'Centro-Oeste',
+    'norte': 'Norte',
+    'nordeste': 'Nordeste',
+    'sul': 'Sul',
+    'sudeste': 'Sudeste'
 }
-
-def analisador_estado(estado, ano, ano_i, ano_f):
-    url_focos_estado = f"estados/{estado}.csv"
-    df_focos = ajusta_serie_temporal( preparar_focos(url_focos_estado) )
+def analisador_regiao(regiao, ano, ano_i, ano_f):
+    url_focos_regiao = f"regioes/{regiao}.csv"
+    df_focos = ajusta_serie_temporal( preparar_focos(url_focos_regiao) )
     df_focos = df_focos[df_focos.index.year < date.today().year].copy() #até
-    estado_nome = estados_formatados.get(estado, estado)
+    regiao_nome = regioes_formatadas.get(regiao, regiao)
     df_anual, media_anual, desvio_anual = calcula_z_anual(df_focos, ano_i, ano_f) # ANUAL
     df_focos_mes, stats_mes = calcula_z_index(df_focos, ano_i, ano_f) #MENSAL
 
     # Tabela mensal
     tabela = tabela_relatorio(df_focos_mes, stats_mes, ano)
     num_cols = tabela.select_dtypes(include='number').columns
-    tabela_estado = (
+    tabela_regiao = (
         tabela
         .style
         .apply(cor_linha, axis=1, ano=ano)
@@ -68,7 +48,7 @@ def analisador_estado(estado, ano, ano_i, ano_f):
 
     # --- montar resultado ---
     return {
-        'Estado': estado_nome,
+        'Região': regiao_nome,
         f'Focos {ano}': focos_ano,
         'Média histórica': media_anual,
         'Desvio histórico': desvio_anual,
@@ -79,13 +59,13 @@ def analisador_estado(estado, ano, ano_i, ano_f):
         f'Dif. relativa (%) {ano-1}': dif_anterior
     }
 
-def plot_annual_estados_graph(estado, df_anual, media_anual, desvio_anual, ano_i, ano_f):
+def plot_annual_regioes_graph(regiao, df_anual, media_anual, desvio_anual, ano_i, ano_f):
 
     img = mpimg.imread('assets/LogoINPEQmdPeq.png')
 
     fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(12, 12), sharex=True) # Increased figure height significantly
-    estado_nome = estados_formatados.get(estado, estado).title()
-    df_anual.focos_ano.plot(kind="bar", ax=axes[0], color='indianred', label='Focos Anuais', title=f'Série Histórica de Focos de calor na região {estado_nome} - Climatologia {ano_i} - {ano_f}')
+    regiao_nome = regioes_formatadas.get(regiao, regiao).title()
+    df_anual.focos_ano.plot(kind="bar", ax=axes[0], color='indianred', label='Focos Anuais', title=f'Série Histórica de Focos de calor na região {regiao_nome} - Climatologia {ano_i} - {ano_f}')
     axes[0].set_ylabel('Número de Focos')
     axes[0].grid(True, axis='y', linestyle='--', alpha=0.6) # Updated grid for axes[0]
     axes[0].axhline(media_anual, color='black', linestyle='--', label='Média Histórica de Focos') # Add horizontal line for mean
@@ -95,7 +75,7 @@ def plot_annual_estados_graph(estado, df_anual, media_anual, desvio_anual, ano_i
     axes[0].fill_between([x_min, x_max], media_anual - desvio_anual, media_anual + desvio_anual, color='grey', alpha=0.2, label='±1 Desvio Padrão Histórico', zorder=0) # zorder=0 to place it behind bars and grid
     axes[0].legend()
 
-    df_anual.z_anual.plot(kind="bar", ax=axes[1], color='black', alpha=0.5, title=f'Z-Score de Focos na região {estado_nome} - Climatologia {ano_i} - {ano_f}')
+    df_anual.z_anual.plot(kind="bar", ax=axes[1], color='black', alpha=0.5, title=f'Z-Score de Focos na região {regiao_nome} - Climatologia {ano_i} - {ano_f}')
     axes[1].set_ylabel('Z-Score')
     axes[1].set_xlabel('Ano')
     axes[1].grid(True, axis='y', linestyle='--', alpha=0.6) # Updated grid for axes[1]

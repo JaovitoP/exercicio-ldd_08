@@ -1,11 +1,47 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import folium
-from streamlit_folium import st_folium
+from streamlit_folium import st_folium, folium_static
 import streamlit as st
-from folium.plugins import MousePosition, Fullscreen
-
+from folium.plugins import MousePosition, Fullscreen, Draw
+import json
 from datetime import datetime
+
+def create_map():
+    m = folium.Map(location=[-23.55052, -46.633308], zoom_start=12)
+    
+    draw = Draw(
+            export=True,
+            draw_options={
+                "polyline": False,
+                "polygon": True,
+                "rectangle": True,
+                "circle": True,
+                "marker": False,
+                "circlemarker": False
+            }
+            )
+    draw.add_to(m)
+    
+    return m
+
+def extract_drawn_area(draw_data):
+    try:
+        drawn_json = json.loads(draw_data)
+        return drawn_json
+    except Exception as e:
+        st.error(f"Erro ao processar os dados desenhados: {e}")
+        return None
+
+
+def extract_drawn_area(draw_data):
+    try:
+        drawn_json = json.loads(draw_data)
+        return drawn_json
+    except Exception as e:
+        st.error(f"Erro ao processar os dados desenhados: {e}")
+        return None
+
 
 def show_map(aoi):
     f = folium.Figure()
@@ -22,7 +58,7 @@ def show_map(aoi):
 
     Fullscreen().add_to(mapa)
 
-    st_folium(mapa, width="100%", height=600)
+    st_folium(mapa, width="100%", height=330)
 
 def show_selected_areas_on_map(aoi, imagem_pre, imagem_pos):
     f = folium.Figure()
@@ -102,16 +138,16 @@ def plot_pre_pos(rgb_pre, rgb_pos):
     plt.close(fig)
 
 
-def plot_ndvi(ndvi_pre, ndvi_pos):
+def plot_ndvi(ndvi_pre, ndvi_pos, vmin=-0.2, vmax=0.65):
     fig, axes = plt.subplots(1, 2, figsize=(14, 7))
     
-    ndvi_pre_plot = axes[0].imshow(ndvi_pre, cmap="RdYlGn", vmin=-0.2, vmax=0.65, interpolation='nearest')
+    ndvi_pre_plot = axes[0].imshow(ndvi_pre, cmap="RdYlGn", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[0].axis("off")
     axes[0].set_title("Pré-Fogo", fontsize=14, fontweight="bold")
     cbar_pre = plt.colorbar(ndvi_pre_plot, ax=axes[0], fraction=0.03, pad=0.04)
     cbar_pre.set_label("NDVI Value")
     
-    ndvi_pos_plot = axes[1].imshow(ndvi_pos, cmap="RdYlGn", vmin=-0.2, vmax=0.65, interpolation='nearest')
+    ndvi_pos_plot = axes[1].imshow(ndvi_pos, cmap="RdYlGn", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[1].axis("off")
     axes[1].set_title("Pós-Fogo", fontsize=14, fontweight="bold")
     cbar_pos = plt.colorbar(ndvi_pos_plot, ax=axes[1], fraction=0.03, pad=0.04)
@@ -122,16 +158,16 @@ def plot_ndvi(ndvi_pre, ndvi_pos):
     plt.close(fig)
     
 
-def plot_nbr(nbr_pre, nbr_pos):
+def plot_nbr(nbr_pre, nbr_pos, vmin=-0.35, vmax=0.35):
     fig, axes = plt.subplots(1, 2, figsize=(14, 7))
     
-    nbr_pre_plot = axes[0].imshow(nbr_pre, cmap="RdYlGn", vmin=-0.35, vmax=0.35, interpolation='nearest')
+    nbr_pre_plot = axes[0].imshow(nbr_pre, cmap="RdYlGn", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[0].axis("off")
     axes[0].set_title("Pré-Fogo", fontsize=14, fontweight="bold")
     cbar_pre = plt.colorbar(nbr_pre_plot, ax=axes[0], fraction=0.03, pad=0.04)
     cbar_pre.set_label("NBR Value")
     
-    nbr_pos_plot = axes[1].imshow(nbr_pos, cmap="RdYlGn", vmin=-0.35, vmax=0.35, interpolation='nearest')
+    nbr_pos_plot = axes[1].imshow(nbr_pos, cmap="RdYlGn", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[1].axis("off")
     axes[1].set_title("Pós-Fogo", fontsize=14, fontweight="bold")
     cbar_pos = plt.colorbar(nbr_pos_plot, ax=axes[1], fraction=0.03, pad=0.04)
@@ -143,17 +179,17 @@ def plot_nbr(nbr_pre, nbr_pos):
     plt.close(fig)
 
 
-def plot_nbrswir(nbrswir_pre, nbrswir_pos):
+def plot_nbrswir(nbrswir_pre, nbrswir_pos, vmin=-0.15, vmax=0.15):
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 7))
     
-    nbrswir_pre_plot = axes[0].imshow(nbrswir_pre, cmap="RdYlGn", vmin=-0.15, vmax=0.15, interpolation='nearest')
+    nbrswir_pre_plot = axes[0].imshow(nbrswir_pre, cmap="RdYlGn", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[0].axis("off")
     axes[0].set_title("Pré-Fogo", fontsize=14, fontweight="bold")
     cbar_pre = plt.colorbar(nbrswir_pre_plot, ax=axes[0], fraction=0.03, pad=0.04)
     cbar_pre.set_label("NBRSWIR Value")
     
-    nbrswir_pos_plot = axes[1].imshow(nbrswir_pos, cmap="RdYlGn", vmin=-0.15, vmax=0.15, interpolation='nearest')
+    nbrswir_pos_plot = axes[1].imshow(nbrswir_pos, cmap="RdYlGn", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[1].axis("off")
     axes[1].set_title("Pós-Fogo", fontsize=14, fontweight="bold")
     cbar_pos = plt.colorbar(nbrswir_pos_plot, ax=axes[1], fraction=0.03, pad=0.04)
@@ -164,23 +200,23 @@ def plot_nbrswir(nbrswir_pre, nbrswir_pos):
     st.pyplot(fig)
     plt.close(fig)
 
-def plot_difference_between_indices(ndvi_dif, nbr_dif, nbrswir_dif):
+def plot_difference_between_indices(ndvi_dif, nbr_dif, nbrswir_dif, vmin=-0.15, vmax=0.25):
     
     fig, axes = plt.subplots(1, 3, figsize=(14, 7))
 
-    ndvi_dif_plot = axes[0].imshow(ndvi_dif, cmap="PuOr", vmin=-0.15, vmax=0.25, interpolation='nearest')
+    ndvi_dif_plot = axes[0].imshow(ndvi_dif, cmap="PuOr", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[0].set_title("NDVI Diferença (Pré - Pós Fogo)")
     axes[0].axis("off")
     cbar_ndvi = plt.colorbar(ndvi_dif_plot, ax=axes[0], fraction=0.03, pad=0.04)
     cbar_ndvi.set_label("NDVI Difference")
 
-    nbr_dif_plot = axes[1].imshow(nbr_dif, cmap="PuOr", vmin=-0.15, vmax=0.25, interpolation='nearest')
+    nbr_dif_plot = axes[1].imshow(nbr_dif, cmap="PuOr", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[1].set_title("NBR Diferença (Pré - Pós Fogo) ")
     axes[1].axis("off")
     cbar_nbr = plt.colorbar(nbr_dif_plot, ax=axes[1], fraction=0.03, pad=0.04)
     cbar_nbr.set_label("NBR Difference")
 
-    nbrswir_dif_plot = axes[2].imshow(nbrswir_dif, cmap="PuOr", vmin=-0.15, vmax=0.25, interpolation='nearest')
+    nbrswir_dif_plot = axes[2].imshow(nbrswir_dif, cmap="PuOr", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[2].set_title("NBR_Swir  Diferença (Pré - Pós Fogo) ")
     axes[2].axis("off")
     cbar_nbr = plt.colorbar(nbrswir_dif_plot, ax=axes[2], fraction=0.03, pad=0.04)

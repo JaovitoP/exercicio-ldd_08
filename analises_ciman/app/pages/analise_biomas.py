@@ -34,11 +34,13 @@ with st.container(border=True):
             label="Selecione o ano de início",
             options=years
         )
+    
+    available_years = [y for y in years if y >= ano_i + 2]
 
     with col3:
         ano_f = st.selectbox(
             label="Selecione o ano de fim",
-            options=years
+            options=available_years
         )
 
     if st.button('Gerar relatório'):

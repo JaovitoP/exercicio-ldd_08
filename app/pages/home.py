@@ -12,75 +12,67 @@ from utils.catalog import *
 from utils.indices import *
 from utils.raster import *
 from utils.visualization import *
+from components.header import *
 
-st.set_page_config(
-    layout='wide',
-    page_icon='🗺️'
-)
+header()
 
-st.logo(image='assets/logotipo_conjugado.svg')
+if "show_ndvi" not in st.session_state:
+    st.session_state.show_ndvi = False
 
-with open('style.css') as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+if "show_nbr" not in st.session_state:
+    st.session_state.show_nbr = False
 
-st.markdown("""
-    <div class="blue-section">
-        <img src="assets/logotipo_govbr.png">
-        <p>COMUNICA BR | ACESSO À INFORMAÇÃO | PARTICIPE | LEGISLAÇÃO | ÓRGÃOS</p>
-    </div>
-""", unsafe_allow_html=True)
+if "show_nbrswir" not in st.session_state:
+    st.session_state.show_nbrswir = False
 
-menu = {
-    "Sistemas": ["Sistema 1", "Sistema 2"],
-    "Dados": ["Download CSV", "API"],
-    "Relatórios": ["Mensal", "Anual"],
-    "Sobre": ["Institucional", "Equipe"]
-}
-
-logo_col, menu_col = st.columns([1, 3])
-
-with logo_col:
-    st.image(
-        image="assets/logotipo_conjugado.svg",
-        width=180,
-    )
-
-with menu_col:
-    with st.container(horizontal=True, horizontal_alignment="right"):
-        for item, opcoes in menu.items():
-            with st.popover(item, type="tertiary"):
-                for opcao in opcoes:
-                    st.button(opcao, type="tertiary")
-
-st.markdown('<div class="gradient-divider"></div>', unsafe_allow_html=True)
+if "show_diff" not in st.session_state:
+    st.session_state.show_diff = False
 
 with st.container(border = True):
-    st.title('Área de interesse')
-    st.subheader('Faça upload da área de interesse')
+    
+    st.header("Desenhe sua Área de Interesse ou faça upload de um shapefile")
 
-    uploaded_file = st.file_uploader(
-        label='Selecione um arquivo zip',
-        type=['zip']
-    )
+    with st.container(border=True):
 
-    if uploaded_file is not None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with zipfile.ZipFile(uploaded_file, 'r') as shapefile_zip:
-                shapefile_zip.extractall(tmpdir)
-                shp_files = [f for f in shapefile_zip.namelist() if f.lower().endswith('.shp')]
-                if not shp_files:
-                    st.error("Nenhum .shp encontrado")
-                else:
-                    shapefile_path = os.path.join(tmpdir, shp_files[0])
-                    aoi = load_aoi(shapefile_path)
-                    aoi = normalize_aoi(aoi)
-                    st.session_state['aoi'] = aoi
-                    st.success("Área de interesse carregada com sucesso!")
-                    df = pd.DataFrame(aoi)
-                    st.dataframe(df)
+        columns = st.columns(2)
+        with columns[0]:
 
-                    with st.spinner(f'Gerando Mapa...'):
-                        show_map(aoi)    
+            m = create_map()
+
+            map_data = st_folium(m, height=500, use_container_width=True)
+
+            if map_data and map_data["all_drawings"]:
+                draw_data = map_data["all_drawings"]
+
+                aoi = drawing_to_gdf(draw_data)
+                aoi = normalize_aoi(aoi)
+
+                st.session_state['aoi'] = aoi
+
+                st.success("AOI criada a partir do desenho!")
+                st.dataframe(aoi)
+        with columns[1]:
+
+            uploaded_file = st.file_uploader(
+                label='Selecione um arquivo zip',
+                type=['zip']
+            )
+
+            if uploaded_file is not None:
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    with zipfile.ZipFile(uploaded_file, 'r') as shapefile_zip:
+                        shapefile_zip.extractall(tmpdir)
+                        shp_files = [f for f in shapefile_zip.namelist() if f.lower().endswith('.shp')]
+                        if not shp_files:
+                            st.error("Nenhum .shp encontrado")
+                        else:
+                            shapefile_path = os.path.join(tmpdir, shp_files[0])
+                            aoi = load_aoi(shapefile_path)
+                            aoi = normalize_aoi(aoi)
+                            st.session_state['aoi'] = aoi
+
+                            with st.spinner(f'Gerando Mapa...'):
+                                show_map(aoi)    
 
 
 if 'aoi' in st.session_state:
@@ -172,91 +164,115 @@ if 'aoi' in st.session_state:
         with st.container(border=True):
             st.title('Índices Espectrais')
 
-            if st.button('Gerar Índices Espectrais'):
-                aoi = st.session_state['aoi']
+            aoi = st.session_state['aoi']
 
-                with st.status('Processando imagens...', expanded=True) as status:
-                    
-                    try:
+            with st.status('Processando imagens...', expanded=True) as status:
+                
+                try:
 
-                        status.write("🔎 Lendo bandas da imagem pré-fogo...")
+                    status.write("🔎 Lendo bandas da imagem pré-fogo...")
 
-                        ds = rasterio.open(img_pre.assets['B04'].href)
-                        b04_pre,b04_pre_transf = read(img_pre.assets['B04'].href, bbox=aoi.total_bounds)
-                        b08_pre,b08_pre_transf = read(img_pre.assets['B08'].href, bbox=aoi.total_bounds)
-                        b8A_pre,_ = read(img_pre.assets['B8A'].href, bbox=aoi.total_bounds)
-                        b11_pre,_ = read(img_pre.assets['B11'].href, bbox=aoi.total_bounds)
-                        b12_pre,_ = read(img_pre.assets['B12'].href, bbox=aoi.total_bounds)
-                        _, box_trasform_20m = read(img_pre.assets['SCL'].href, bbox=aoi.total_bounds)
+                    ds = rasterio.open(img_pre.assets['B04'].href)
+                    b04_pre,b04_pre_transf = read(img_pre.assets['B04'].href, bbox=aoi.total_bounds)
+                    b08_pre,b08_pre_transf = read(img_pre.assets['B08'].href, bbox=aoi.total_bounds)
+                    b8A_pre,_ = read(img_pre.assets['B8A'].href, bbox=aoi.total_bounds)
+                    b11_pre,_ = read(img_pre.assets['B11'].href, bbox=aoi.total_bounds)
+                    b12_pre,_ = read(img_pre.assets['B12'].href, bbox=aoi.total_bounds)
+                    _, box_trasform_20m = read(img_pre.assets['SCL'].href, bbox=aoi.total_bounds)
 
-                        status.write("🔄 Reprojetando bandas 10m para 20m...")
+                    status.write("🔄 Reprojetando bandas 10m para 20m...")
 
-                        b04_pre = transforme_20m(b04_pre,b04_pre_transf,ds.crs ) 
-                        b08_pre = transforme_20m(b08_pre,b08_pre_transf,ds.crs ) 
+                    b04_pre = transforme_20m(b04_pre,b04_pre_transf,ds.crs ) 
+                    b08_pre = transforme_20m(b08_pre,b08_pre_transf,ds.crs ) 
 
-                        status.write("🔥 Lendo bandas da imagem pós-fogo...")
-                        b04_pos,b04_pos_transf = read(img_pos.assets['B04'].href, bbox=aoi.total_bounds)
-                        b08_pos,b08_pos_transf = read(img_pos.assets['B08'].href, bbox=aoi.total_bounds)
-                        b8A_pos,_ = read(img_pos.assets['B8A'].href, bbox=aoi.total_bounds)
-                        b11_pos,_ = read(img_pos.assets['B11'].href, bbox=aoi.total_bounds)
-                        b12_pos,_ = read(img_pos.assets['B12'].href, bbox=aoi.total_bounds)
+                    status.write("🔥 Lendo bandas da imagem pós-fogo...")
+                    b04_pos,b04_pos_transf = read(img_pos.assets['B04'].href, bbox=aoi.total_bounds)
+                    b08_pos,b08_pos_transf = read(img_pos.assets['B08'].href, bbox=aoi.total_bounds)
+                    b8A_pos,_ = read(img_pos.assets['B8A'].href, bbox=aoi.total_bounds)
+                    b11_pos,_ = read(img_pos.assets['B11'].href, bbox=aoi.total_bounds)
+                    b12_pos,_ = read(img_pos.assets['B12'].href, bbox=aoi.total_bounds)
 
-                        status.write("🔄 Reprojetando pós-fogo...")
-                        b04_pos = transforme_20m(b04_pos,b04_pos_transf,ds.crs ) 
-                        b08_pos = transforme_20m(b08_pos,b08_pos_transf,ds.crs )
+                    status.write("🔄 Reprojetando pós-fogo...")
+                    b04_pos = transforme_20m(b04_pos,b04_pos_transf,ds.crs ) 
+                    b08_pos = transforme_20m(b08_pos,b08_pos_transf,ds.crs )
 
-                        rgb_pre = np.dstack([b12_pre, b08_pre, b04_pre])
-                        rgb_pos = np.dstack([b12_pos, b08_pos, b04_pos])
-
-
-                        status.write("📊 Calculando índices espectrais...")
-                        ndvi_pre = ndvi(b08_pre,b04_pre)
-                        nbr_pre = nbr(b8A_pre,b12_pre)
-                        nbrswir_pre = nbrswir(b11_pre,b12_pre)
-
-                            
-                        ndvi_pos = ndvi(b08_pos,b04_pos)
-                        nbr_pos = nbr(b8A_pos,b12_pos)
-                        nbrswir_pos = nbrswir(b11_pos,b12_pos)
-
-                        ndvi_dif = ndvi_pre - ndvi_pos
-
-                        nbr_dif = nbr_pre - nbr_pos
-
-                        nbrswir_dif = nbrswir_pre - nbrswir_pos
-
-                        status.update(label="✅ Processamento concluído!", state="complete")
-                    except Exception as e:
-                        status.write(f"❌ Erro: {e}")
-                        status.update(label="Erro no processamento", state="error")
+                    rgb_pre = np.dstack([b12_pre, b08_pre, b04_pre])
+                    rgb_pos = np.dstack([b12_pos, b08_pos, b04_pos])
 
 
+                    status.write("📊 Calculando índices espectrais...")
+                    ndvi_pre = ndvi(b08_pre,b04_pre)
+                    nbr_pre = nbr(b8A_pre,b12_pre)
+                    nbrswir_pre = nbrswir(b11_pre,b12_pre)
 
-                indices = [
-                    ("Área Queimada", lambda: plot_pre_pos(rgb_pre, rgb_pos)),
-                    ("NDVI", lambda: plot_ndvi(ndvi_pre, ndvi_pos)),
-                    ("NBR", lambda: plot_nbr(nbr_pre, nbr_pos)),
-                    ("NBRSWIR", lambda: plot_nbrswir(nbrswir_pre, nbrswir_pos)),
-                    ("Diferença entre índices", lambda: plot_difference_between_indices(ndvi_dif, nbr_dif, nbrswir_dif))
-                ]
+                        
+                    ndvi_pos = ndvi(b08_pos,b04_pos)
+                    nbr_pos = nbr(b8A_pos,b12_pos)
+                    nbrswir_pos = nbrswir(b11_pos,b12_pos)
 
-                num_cols = 2
+                    ndvi_dif = ndvi_pre - ndvi_pos
 
-                for i in range(0, len(indices), num_cols):
-                    cols = st.columns(num_cols)
+                    nbr_dif = nbr_pre - nbr_pos
 
-                    for col, (titulo, plot_func) in zip(cols, indices[i:i+num_cols]):
-                        with col:
-                            st.subheader(titulo)
-                            with st.spinner(f'Gerando {titulo}...'):
-                                plot_func()
+                    nbrswir_dif = nbrswir_pre - nbrswir_pos
 
-                files = save_rgb_in_geotiff_format(ds.crs, box_trasform_20m, rgb_pre, rgb_pos)
-                for file in files:
-                    with open(file, 'rb') as f:
-                        st.download_button(
-                            label=f"Baixar {file.split('/')[-1]}",
-                            data=f,
-                            file_name=file.split('/')[-1],
-                            mime="image/tiff"
-                        )
+                    status.update(label="✅ Processamento concluído!", state="complete")
+                except Exception as e:
+                    status.write(f"❌ Erro: {e}")
+                    status.update(label="Erro no processamento", state="error")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            with st.container(border=True):
+                st.subheader("Índice de Vegetação por Diferença Normalizada (NDVI)")
+
+                vmin_ndvi = st.number_input("vmin NDVI", value=-0.2, key="vmin_ndvi")
+                vmax_ndvi = st.number_input("vmax NDVI", value=0.65, key="vmax_ndvi")
+
+                if st.button('Gerar NDVI'):
+                    st.session_state.show_ndvi = True
+
+                if st.session_state.show_ndvi:
+                    with st.spinner("Gerando NDVI..."):
+                        plot_ndvi(ndvi_pre, ndvi_pos, vmin=vmin_ndvi, vmax=vmax_ndvi)
+
+            with st.container(border=True):
+                    st.subheader("NBRSWIR")
+                    vmin_nbrswir = st.number_input("vmin NBRSWIR", value=-0.15, key="vmin_nbrswir")
+                    vmax_nbrswir = st.number_input("vmax NBRSWIR", value=0.15, key="vmax_nbrswir")
+
+                    if st.button('Gerar NBRSWIR'):
+                        st.session_state.show_nbrswir = True
+
+                    if st.session_state.show_nbrswir:
+                        with st.spinner("Gerando NBRSWIR..."):
+                            plot_nbrswir(nbrswir_pre, nbrswir_pos, vmin=vmin_nbrswir, vmax=vmax_nbrswir)
+
+
+        with col2:
+            with st.container(border=True):
+                st.subheader("Índice de Queimada Normalizada (NBR)")
+
+                vmin_nbr = st.number_input("vmin NBR", value=-0.35, key="vmin_nbr")
+                vmax_nbr = st.number_input("vmax NBR", value=0.35, key="vmax_nbr")
+
+                if st.button('Gerar NBR'):
+                    st.session_state.show_nbr = True
+
+                if st.session_state.show_nbr:
+                    with st.spinner("Gerando NBR..."):
+                        plot_nbr(nbr_pre, nbr_pos, vmin=vmin_nbr, vmax=vmax_nbr)
+
+
+        with st.container(border=True):
+            st.subheader("Diferença entre índices")
+            vmin_diff = st.number_input("vmin Diferença", value=-0.15, key="vmin_diff")
+            vmax_diff = st.number_input("vmax Diferença", value=0.25, key="vmax_diff")
+
+            if st.button('Gerar Diferença entre índices'):
+                st.session_state.show_diff = True
+
+            if st.session_state.show_diff:
+                with st.spinner("Gerando Diferença entre índices..."):
+                    plot_difference_between_indices(ndvi_dif, nbr_dif, nbrswir_dif, vmin=vmin_diff, vmax=vmax_diff)

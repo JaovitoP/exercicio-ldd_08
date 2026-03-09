@@ -8,7 +8,9 @@ from utils.brasil import *
 from components.ui import gradient_divider, logo
 
 #to do: passar média histórica para inteiro
-#to do: restringir para que o ano de fim seja de um intervalo de no mínimo 2 anos do ano de início
+#to do: restringir para que o ano de fim seja de um intervalo de no mínimo 2 anos do ano de início na tela dee biomas
+#to do: por estado
+#to do: por região
 
 st.set_page_config(
     layout='wide',
