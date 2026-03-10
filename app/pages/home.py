@@ -28,11 +28,18 @@ if "show_nbrswir" not in st.session_state:
 if "show_diff" not in st.session_state:
     st.session_state.show_diff = False
 
+if "show_dnbrswir" not in st.session_state:
+    st.session_state.show_dnbrswir = False
+
+if "dnbrswir_and_mask" not in st.session_state:
+    st.session_state.dnbrswir_and_mask = False
+
 with st.container(border = True):
     
-    st.header("Desenhe sua Área de Interesse ou faça upload de um shapefile")
+    st.title(body =" Mapeamento de fogo", text_alignment="center")
 
     with st.container(border=True):
+        st.subheader("Desenhe sua área de interesse no mapa ou faça o upload")
 
         columns = st.columns(2)
         with columns[0]:
@@ -79,7 +86,8 @@ if 'aoi' in st.session_state:
     
     with st.container(border=True):
 
-        st.subheader('Selecione o intervalo de tempo')
+        st.subheader('Intervalo de tempo')
+        st.write('Selecione a data de início e a data de fim das imagens que deseja buscar.')
 
         columns = st.columns(2)
 
@@ -130,35 +138,57 @@ if 'aoi' in st.session_state:
                 for i, item in enumerate(items)
             ]
 
+            st.subheader('Selecione a imagem pré e pós fogo para comparação e visualização de camadas no mapa.')
+
             labels = [opt["label"] for opt in options]
 
-            select_img_cols = st.columns(2)
+            select_img_cols = st.columns(4)
 
-            with select_img_cols[0]:
-                img_pre_label = st.selectbox("Selecione a imagem Pré-Fogo", labels)
-            with select_img_cols[1]:
-                img_pos_label = st.selectbox("Selecione a imagem Pós-Fogo", labels)
+            col_select, col_map = st.columns([1, 1])
 
-            img_pre = next(opt["item"] for opt in options if opt["label"] == img_pre_label)
-            img_pos = next(opt["item"] for opt in options if opt["label"] == img_pos_label)
-            st.session_state['img_pre'] = img_pre
-            st.session_state['img_pos'] = img_pos
+            with col_select:
 
-            thumbnail_pre = img_pre.assets['PVI'].href
-            thumbnail_pos = img_pos.assets['PVI'].href
-
-            columns = st.columns(4)
-            with columns[1]:
-                st.image(thumbnail_pre, caption=img_pre_label)
-            with columns[2]:
-                st.image(thumbnail_pos, caption=img_pos_label)
+                select_img_cols = st.columns(2)
 
 
-            if 'show_map_flag' not in st.session_state:
-                st.session_state['show_map_flag'] = False
+                with select_img_cols[0]:
+                    img_pre_label = st.selectbox("Selecione a imagem Pré-Fogo", labels)
 
-            with st.expander("Visualizar imagens no mapa"):
-                show_selected_areas_on_map(st.session_state['aoi'], img_pre, img_pos)
+                img_pre = next(opt["item"] for opt in options if opt["label"] == img_pre_label)
+
+                with select_img_cols[1]:
+                    img_pos_label = st.selectbox("Selecione a imagem Pós-Fogo", labels)
+
+                img_pos = next(opt["item"] for opt in options if opt["label"] == img_pos_label)
+
+                st.session_state['img_pre'] = img_pre
+                st.session_state['img_pos'] = img_pos
+
+                thumbnail_pre = img_pre.assets['PVI'].href
+                thumbnail_pos = img_pos.assets['PVI'].href
+
+                img_cols = st.columns(2)
+
+                with img_cols[0]:
+                    st.image(thumbnail_pre, caption=img_pre_label)
+
+                with img_cols[1]:
+                    st.image(thumbnail_pos, caption=img_pos_label)
+
+
+            with col_map:
+
+                if 'show_map_flag' not in st.session_state:
+                    st.session_state['show_map_flag'] = False
+
+                with st.expander("Visualizar imagens no mapa", expanded=True):
+                    show_selected_areas_on_map(
+                        st.session_state['aoi'],
+                        st.session_state['img_pre'],
+                        st.session_state['img_pos']
+                    )
+
+
 
     if 'img_pre' in st.session_state:
         with st.container(border=True):
@@ -200,7 +230,6 @@ if 'aoi' in st.session_state:
                     rgb_pos = np.dstack([b12_pos, b08_pos, b04_pos])
 
 
-                    status.write("📊 Calculando índices espectrais...")
                     ndvi_pre = ndvi(b08_pre,b04_pre)
                     nbr_pre = nbr(b8A_pre,b12_pre)
                     nbrswir_pre = nbrswir(b11_pre,b12_pre)
@@ -266,7 +295,7 @@ if 'aoi' in st.session_state:
 
 
         with st.container(border=True):
-            st.subheader("Diferença entre índices")
+            st.subheader("Diferença entre os índices NDVI, NBR e NBR SWIR")
             vmin_diff = st.number_input("vmin Diferença", value=-0.15, key="vmin_diff")
             vmax_diff = st.number_input("vmax Diferença", value=0.25, key="vmax_diff")
 
@@ -275,4 +304,27 @@ if 'aoi' in st.session_state:
 
             if st.session_state.show_diff:
                 with st.spinner("Gerando Diferença entre índices..."):
-                    plot_difference_between_indices(ndvi_dif, nbr_dif, nbrswir_dif, vmin=vmin_diff, vmax=vmax_diff)
+                    plot_difference_between_indices(
+                        ndvi_dif, nbr_dif, nbrswir_dif,
+                        vmin=vmin_diff, vmax=vmax_diff
+                    )
+
+        col1, col2 = st.columns([1, 2])
+
+        with col1, st.container(border=True):
+            threshold = st.number_input("Threshold", value=0.06, key="threshold")
+            if st.button('Gerar dNBRswir'):
+                st.session_state.show_dnbrswir = True
+            if st.session_state.show_dnbrswir:
+                with st.spinner("Gerando dNBRswir..."):
+                    plot_dnbrswir(nbrswir_dif, threshold)
+
+
+        with col2, st.container(border=True):
+            vmin_dnbrswir = st.number_input("vmin dNBRswir", value=-0.15, key="vmin_dnbrswir")
+            vmax_dnbrswir = st.number_input("vmax dNBRswir", value=0.25, key="vmax_dnbrswir")
+            if st.button('Gerar NBRswir e máscara'):
+                st.session_state.dnbrswir_and_mask = True
+            if st.session_state.dnbrswir_and_mask:
+                with st.spinner("Gerando dNBRswir e máscara..."):
+                    plot_dnbrswir_and_mask(nbrswir_dif, threshold, vmin_dnbrswir, vmax_dnbrswir)

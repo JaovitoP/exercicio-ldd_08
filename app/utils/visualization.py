@@ -8,7 +8,9 @@ import json
 from datetime import datetime
 
 def create_map():
-    m = folium.Map(location=[-23.55052, -46.633308], zoom_start=12)
+    m = folium.Map(location=[-14.2350, -51.9253], zoom_start=4,
+               attr="Esri World Imagery"
+                   )
     
     draw = Draw(
             export=True,
@@ -22,6 +24,14 @@ def create_map():
             }
             )
     draw.add_to(m)
+    folium.plugins.Fullscreen(
+        position="topright",
+        title="Expandir",
+        title_cancel="Sair",
+        force_separate_button=True,
+    ).add_to(m)
+
+    folium.plugins.Geocoder().add_to(m)
     
     return m
 
@@ -208,21 +218,52 @@ def plot_difference_between_indices(ndvi_dif, nbr_dif, nbrswir_dif, vmin=-0.15, 
     axes[0].set_title("NDVI Diferença (Pré - Pós Fogo)")
     axes[0].axis("off")
     cbar_ndvi = plt.colorbar(ndvi_dif_plot, ax=axes[0], fraction=0.03, pad=0.04)
-    cbar_ndvi.set_label("NDVI Difference")
+    cbar_ndvi.set_label("NDVI Diferença")
 
     nbr_dif_plot = axes[1].imshow(nbr_dif, cmap="PuOr", vmin=vmin, vmax=vmax, interpolation='nearest')
     axes[1].set_title("NBR Diferença (Pré - Pós Fogo) ")
     axes[1].axis("off")
     cbar_nbr = plt.colorbar(nbr_dif_plot, ax=axes[1], fraction=0.03, pad=0.04)
-    cbar_nbr.set_label("NBR Difference")
+    cbar_nbr.set_label("NBR Diferença")
 
     nbrswir_dif_plot = axes[2].imshow(nbrswir_dif, cmap="PuOr", vmin=vmin, vmax=vmax, interpolation='nearest')
-    axes[2].set_title("NBR_Swir  Diferença (Pré - Pós Fogo) ")
+    axes[2].set_title("NBR Swir  Diferença (Pré - Pós Fogo) ")
     axes[2].axis("off")
     cbar_nbr = plt.colorbar(nbrswir_dif_plot, ax=axes[2], fraction=0.03, pad=0.04)
-    cbar_nbr.set_label("NBR_Swir Difference")
+    cbar_nbr.set_label("NBR Swir Diferença")
 
     plt.tight_layout()
 
+    st.pyplot(fig)
+    plt.close(fig)
+
+def plot_dnbrswir(nbrswir_dif, threshold=0.06):
+    dnbrswir_thres_0_1 = np.where(nbrswir_dif >= threshold, 1, 0)
+
+    fig = plt.figure(figsize=(14, 7))
+    plt.imshow(dnbrswir_thres_0_1)
+    plt.title(f'(dNBRswir) com Threshold {threshold}')
+    plt.tight_layout()
+
+    st.pyplot(fig)
+    plt.close(fig)
+
+def plot_dnbrswir_and_mask(nbrswir_dif, threshold, vmin=-0.15, vmax=0.25):
+    dnbrswir_thres_0_1 = np.where(nbrswir_dif >= threshold, 1, 0)
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 7), gridspec_kw={'width_ratios': [1, 1]})
+
+    dnbrswir_plot = axes[0].imshow(nbrswir_dif, cmap="PuOr", vmin=vmin, vmax=vmax, interpolation='nearest')
+    axes[0].set_title("Difference of Normalized Burn Ratio SWIR (dNBRswir)")
+    axes[0].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+
+    cbar = plt.colorbar(dnbrswir_plot, ax=axes[0], fraction=0.03, pad=0.04)
+    cbar.set_label("dNBRswir Value")
+
+    nbrswir_plot = axes[1].imshow(dnbrswir_thres_0_1, cmap='gray_r')
+    axes[1].set_title("dNBRswir masked area after touch up")
+    axes[1].tick_params(left=False, bottom=False, labelleft=False, labelbottom=False)
+
+    plt.tight_layout()
     st.pyplot(fig)
     plt.close(fig)
