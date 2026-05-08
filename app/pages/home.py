@@ -50,14 +50,27 @@ with st.container(border = True):
 
             if map_data and map_data["all_drawings"]:
                 draw_data = map_data["all_drawings"]
+                
+                last_drawing = [draw_data[-1]]
 
-                aoi = drawing_to_gdf(draw_data)
+                aoi = drawing_to_gdf(last_drawing)
                 aoi = normalize_aoi(aoi)
 
-                st.session_state['aoi'] = aoi
+                if 'aoi' not in st.session_state or not st.session_state['aoi'].equals(aoi):
+                    st.session_state['aoi'] = aoi
+                    for key in ['items', 'img_pre', 'img_pos']:
+                        st.session_state.pop(key, None)
+                    st.rerun()
 
                 st.success("AOI criada a partir do desenho!")
                 st.dataframe(aoi)
+
+            elif map_data and not map_data["all_drawings"]:
+                if 'aoi' in st.session_state:
+                    for key in ['aoi', 'items', 'img_pre', 'img_pos']:
+                        st.session_state.pop(key, None)
+                    st.rerun()
+
         with columns[1]:
 
             uploaded_file = st.file_uploader(
@@ -115,7 +128,7 @@ if 'aoi' in st.session_state:
                 )
             items = get_items_with_aoi_within(st.session_state['aoi'], list(st.session_state['items']))
             st.session_state['items'] = items
-            
+
         if 'items' in st.session_state:
 
             items = st.session_state['items']
@@ -137,56 +150,58 @@ if 'aoi' in st.session_state:
                 }
                 for i, item in enumerate(items)
             ]
+            if options:
+                st.subheader('Selecione a imagem pré e pós fogo para comparação e visualização de camadas no mapa.')
 
-            st.subheader('Selecione a imagem pré e pós fogo para comparação e visualização de camadas no mapa.')
+                labels = [opt["label"] for opt in options]
 
-            labels = [opt["label"] for opt in options]
+                select_img_cols = st.columns(4)
 
-            select_img_cols = st.columns(4)
+                col_select, col_map = st.columns([1, 1])
 
-            col_select, col_map = st.columns([1, 1])
+                with col_select:
 
-            with col_select:
-
-                select_img_cols = st.columns(2)
-
-
-                with select_img_cols[0]:
-                    img_pre_label = st.selectbox("Selecione a imagem Pré-Fogo", labels)
-
-                img_pre = next(opt["item"] for opt in options if opt["label"] == img_pre_label)
-
-                with select_img_cols[1]:
-                    img_pos_label = st.selectbox("Selecione a imagem Pós-Fogo", labels)
-
-                img_pos = next(opt["item"] for opt in options if opt["label"] == img_pos_label)
-
-                st.session_state['img_pre'] = img_pre
-                st.session_state['img_pos'] = img_pos
-
-                thumbnail_pre = img_pre.assets['PVI'].href
-                thumbnail_pos = img_pos.assets['PVI'].href
-
-                img_cols = st.columns(2)
-
-                with img_cols[0]:
-                    st.image(thumbnail_pre, caption=img_pre_label)
-
-                with img_cols[1]:
-                    st.image(thumbnail_pos, caption=img_pos_label)
+                    select_img_cols = st.columns(2)
 
 
-            with col_map:
+                    with select_img_cols[0]:
+                        img_pre_label = st.selectbox("Selecione a imagem Pré-Fogo", labels)
 
-                if 'show_map_flag' not in st.session_state:
-                    st.session_state['show_map_flag'] = False
+                    img_pre = next(opt["item"] for opt in options if opt["label"] == img_pre_label)
 
-                with st.expander("Visualizar imagens no mapa", expanded=True):
-                    show_selected_areas_on_map(
-                        st.session_state['aoi'],
-                        st.session_state['img_pre'],
-                        st.session_state['img_pos']
-                    )
+                    with select_img_cols[1]:
+                        img_pos_label = st.selectbox("Selecione a imagem Pós-Fogo", labels)
+
+                    img_pos = next(opt["item"] for opt in options if opt["label"] == img_pos_label)
+
+                    st.session_state['img_pre'] = img_pre
+                    st.session_state['img_pos'] = img_pos
+
+                    thumbnail_pre = img_pre.assets['PVI'].href
+                    thumbnail_pos = img_pos.assets['PVI'].href
+
+                    img_cols = st.columns(2)
+
+                    with img_cols[0]:
+                        st.image(thumbnail_pre, caption=img_pre_label)
+
+                    with img_cols[1]:
+                        st.image(thumbnail_pos, caption=img_pos_label)
+
+
+                with col_map:
+
+                    if 'show_map_flag' not in st.session_state:
+                        st.session_state['show_map_flag'] = False
+
+                    with st.expander("Visualizar imagens no mapa", expanded=True):
+                        show_selected_areas_on_map(
+                            st.session_state['aoi'],
+                            st.session_state['img_pre'],
+                            st.session_state['img_pos']
+                        )
+            else:
+                st.warning("Nenhuma imagem encontrada para a área de interesse no intervalo de tempo selecionados.")
 
 
 

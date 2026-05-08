@@ -1,5 +1,5 @@
 import numpy as np
-
+import math
 import os
 
 import warnings
@@ -18,7 +18,7 @@ def transforme_20m (asset, transforme, crs):
     tranform_20 = Affine(20.0, 0.0, transforme.c,
                          transforme.d,-20.0,transforme.f)
 
-    array_20 = np.zeros((int(asset.shape[0]/2), int(asset.shape[1]/2)), dtype=asset.dtype)
+    array_20 = np.zeros((math.ceil(asset.shape[0]/2), math.ceil(asset.shape[1]/2)), dtype=asset.dtype)
 
     reproject(
         source=asset.data, 
@@ -32,6 +32,7 @@ def transforme_20m (asset, transforme, crs):
         resampling=Resampling.nearest
     )
     return array_20
+
 
 
 def read(uri: str, bbox: list, masked: bool = True, crs: str = None):
