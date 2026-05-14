@@ -1,7 +1,14 @@
+import os
+os.environ["GDAL_HTTP_UNSAFESSL"] = "YES"
+os.environ["GDAL_HTTP_MAX_RETRY"] = "3"
+os.environ["GDAL_HTTP_RETRY_DELAY"] = "5"
+os.environ["GDAL_DISABLE_READDIR_ON_OPEN"] = "EMPTY_DIR"
+os.environ["CPL_VSIL_CURL_ALLOWED_EXTENSIONS"] = ".tif,.tiff,.jp2"
+os.environ["GDAL_HTTP_MERGE_CONSECUTIVE_RANGES"] = "YES"
+os.environ["GDAL_INGESTED_BYTES_AT_OPEN"] = "32768"
+
 import numpy as np
 import math
-import os
-
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -11,6 +18,12 @@ from rasterio.crs import CRS
 from rasterio.windows import from_bounds
 from rasterio.warp import Resampling, reproject, transform
 
+
+def _ensure_vsicurl(uri: str) -> str:
+    """Garante que URLs HTTP(S) usem o driver vsicurl do GDAL."""
+    if uri.startswith("http://") or uri.startswith("https://"):
+        return "/vsicurl/" + uri
+    return uri
 
 def transforme_20m (asset, transforme, crs):
     '''Reamostragem de dados de 20 para 10 mts'''
@@ -33,25 +46,30 @@ def transforme_20m (asset, transforme, crs):
     )
     return array_20
 
-
-
 def read(uri: str, bbox: list, masked: bool = True, crs: str = None):
     source_crs = CRS.from_string('EPSG:4326')
     
     if crs:
         source_crs = CRS.from_string(crs)
 
+    uri = _ensure_vsicurl(uri)  # ← adiciona /vsicurl/ se necessário
     w, s, e, n = bbox
         
     with rasterio.open(uri) as dataset:
         transformer = transform(source_crs, dataset.crs, [w, e], [s, n])
-        window = from_bounds(transformer[0][0], transformer[1][0], 
-                             transformer[0][1], transformer[1][1], dataset.transform)
+        window = from_bounds(
+            transformer[0][0], transformer[1][0],
+            transformer[0][1], transformer[1][1],
+            dataset.transform
+        )
         
-        box_trasform = rasterio.transform.from_bounds(transformer[0][0], transformer[1][0],
-                                                      transformer[0][1], transformer[1][1], window.width, window.height)
+        box_trasform = rasterio.transform.from_bounds(
+            transformer[0][0], transformer[1][0],
+            transformer[0][1], transformer[1][1],
+            window.width, window.height
+        )
         
-        return dataset.read(1, window=window, masked=masked)*0.0001, box_trasform
+        return dataset.read(1, window=window, masked=masked) * 0.0001, box_trasform
 
 
 def save_rgb_in_geotiff_format(crs, transform, *args):
